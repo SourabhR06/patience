@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Patience Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(255,255,255,0.15);
+      --text: #f0eeff;
+      --muted: #6e6a8a;
+      --accent: #7c6cff;
+      --accent-glow: rgba(124,108,255,0.25);
+      --green: #3ddc84;
+      --green-bg: rgba(61,220,132,0.1);
+      --red: #ff5c5c;
+      --red-bg: rgba(255,92,92,0.1);
+      --amber: #ffb547;
+      --amber-bg: rgba(255,181,71,0.1);
+      --radius: 20px;
+      --radius-sm: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,108,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,108,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 30s linear infinite;
+      pointer-events: none;
+    }
+    .orb { position:fixed; border-radius:50%; pointer-events:none; }
+    .orb1 { width:700px;height:700px;background:radial-gradient(circle,rgba(124,108,255,0.09) 0%,transparent 65%);top:-280px;left:-280px;animation:orbFloat 14s ease-in-out infinite alternate; }
+    .orb2 { width:500px;height:500px;background:radial-gradient(circle,rgba(61,220,132,0.06) 0%,transparent 65%);bottom:-200px;right:-150px;animation:orbFloat2 18s ease-in-out infinite alternate; }
+    @keyframes gridDrift{from{transform:translate(0,0)}to{transform:translate(48px,48px)}}
+    @keyframes orbFloat{from{transform:translate(0,0) scale(1)}to{transform:translate(60px,50px) scale(1.1)}}
+    @keyframes orbFloat2{from{transform:translate(0,0)}to{transform:translate(-40px,-40px)}}
+
+    #app { width:100%;max-width:560px;position:relative;z-index:1; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: cardIn 0.5s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .card::before {
+      content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+      background:linear-gradient(90deg,transparent,rgba(124,108,255,0.7),transparent);
+    }
+    .card::after {
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 50% 0%,rgba(124,108,255,0.05) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+    .stage-label {
+      font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;
+      color:var(--muted);text-transform:uppercase;margin-bottom:2rem;
+      display:flex;align-items:center;justify-content:center;gap:10px;
+    }
+    .stage-label::before,.stage-label::after{content:'';flex:1;height:1px;background:var(--border);max-width:70px;}
+
+    h1{font-size:30px;font-weight:800;letter-spacing:-0.03em;color:var(--text);margin-bottom:0.6rem;line-height:1.15;}
+    .subtitle{font-size:14px;color:var(--muted);margin-bottom:2rem;font-weight:400;line-height:1.7;}
+    .msg{font-size:15px;color:#aba6c8;margin:1rem 0 1.8rem;line-height:1.75;min-height:52px;}
+
+    .badge{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:99px;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1.5rem;font-family:'DM Mono',monospace;}
+    .badge-warn{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,181,71,0.2);}
+    .badge-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(61,220,132,0.2);}
+    .badge-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,92,92,0.2);}
+    .badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite;flex-shrink:0;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:transform 0.15s,box-shadow 0.2s,background 0.15s;letter-spacing:0.01em;position:relative;}
+    .btn-primary::after{content:'';position:absolute;inset:0;border-radius:var(--radius-sm);background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,transparent 60%);pointer-events:none;}
+    .btn-primary:hover{background:#8f80ff;transform:translateY(-2px);box-shadow:0 10px 40px var(--accent-glow),0 0 0 1px rgba(124,108,255,0.3);}
+    .btn-primary:active{transform:scale(0.97) translateY(0);}
+
+    .btn-ghost{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:var(--radius-sm);border:1px solid var(--border-hover);background:transparent;color:var(--text);font-size:14px;font-weight:600;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.15s;}
+    .btn-ghost:hover{background:var(--surface2);border-color:rgba(255,255,255,0.22);transform:translateY(-1px);}
+    .btn-ghost:active{transform:scale(0.97);}
+
+    .color-btn{padding:13px 22px;border-radius:var(--radius-sm);border:1px solid;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:transform 0.15s,filter 0.15s;letter-spacing:0.02em;}
+    .color-btn:hover{filter:brightness(1.15);transform:translateY(-2px);}
+
+    .progress-wrap{background:var(--surface2);border-radius:99px;height:6px;width:100%;margin:1.2rem 0 0.6rem;overflow:hidden;}
+    .progress-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#b564ff);transition:width 0.45s cubic-bezier(0.4,0,0.2,1);}
+    .progress-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);min-height:18px;}
+
+    .num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:1.4rem 0;}
+    .num-btn{aspect-ratio:1;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:19px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+    .num-btn:hover{border-color:rgba(124,108,255,0.5);background:rgba(124,108,255,0.1);transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,108,255,0.15);}
+    .num-btn.wrong{background:var(--red-bg);border-color:rgba(255,92,92,0.4);animation:shake 0.4s;}
+    .num-btn.correct{background:var(--green-bg);border-color:rgba(61,220,132,0.4);color:var(--green);}
+
+    .question-label{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.6rem;}
+    #q5-label{cursor:pointer;display:inline-block;padding:1px 8px;border-radius:6px;border:1px dashed rgba(124,108,255,0.4);background:rgba(124,108,255,0.08);color:var(--accent);transition:all 0.15s;font-weight:700;}
+    #q5-label:hover{background:rgba(124,108,255,0.18);border-color:var(--accent);}
+    #q5-label.correct{background:var(--green-bg);border-color:rgba(61,220,132,0.5);color:var(--green);border-style:solid;}
+
+    .taunt{font-size:12px;color:var(--red);min-height:22px;font-family:'DM Mono',monospace;transition:color 0.3s;line-height:1.5;}
+    .taunt.success{color:var(--green);}
+
+    #ok-area{position:relative;height:100px;display:flex;align-items:center;justify-content:center;margin:0.5rem 0;}
+    #ok-btn{position:relative;transition:left 0.12s cubic-bezier(0.4,0,0.2,1),top 0.12s cubic-bezier(0.4,0,0.2,1);}
+
+    .score-display{font-size:72px;font-weight:800;letter-spacing:-0.04em;background:linear-gradient(135deg,var(--accent),#c084ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0.5rem 0 0.2rem;line-height:1;}
+    .score-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;}
+    .divider{height:1px;background:var(--border);margin:1.8rem 0;}
+    .footnote{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:1.2rem;line-height:1.6;opacity:0.65;}
+
+    .shake{animation:shake 0.4s;}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+    /* ── CAPTCHA STAGE ── */
+    .captcha-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:1.2rem 0;}
+    .captcha-cell{aspect-ratio:1;border-radius:8px;border:2px solid transparent;cursor:pointer;overflow:hidden;transition:all 0.15s;position:relative;}
+    .captcha-cell:hover{filter:brightness(1.1);}
+    .captcha-cell.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,108,255,0.3);}
+    .captcha-cell canvas{display:block;width:100%;height:100%;}
+    .captcha-verify-btn{margin-top:0.8rem;width:100%;}
+    .captcha-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:1rem;border:1px solid var(--border);}
+    .captcha-check-icon{font-size:22px;}
+    .captcha-text{font-size:13px;color:var(--muted);text-align:left;line-height:1.4;}
+
+    /* ── CHECKBOX STAGE ── */
+    .checkbox-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color 0.15s;position:relative;margin:1.5rem 0;}
+    .checkbox-card:hover{border-color:var(--border-hover);}
+    .fake-checkbox{width:24px;height:24px;border-radius:5px;border:2px solid var(--muted);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+    .checkbox-label-text{font-size:15px;font-weight:600;color:var(--text);}
+    .checkbox-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+    .recaptcha-logo{margin-left:auto;text-align:center;flex-shrink:0;}
+    .recaptcha-logo-img{font-size:24px;}
+    .recaptcha-logo-text{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;}
+
+    /* ── TIMER STAGE ── */
+    .timer-circle-wrap{position:relative;width:120px;height:120px;margin:0 auto 1rem;}
+    .timer-svg{transform:rotate(-90deg);}
+    .timer-track{fill:none;stroke:var(--surface2);stroke-width:8;}
+    .timer-prog{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.1s linear;stroke-dasharray:326;stroke-dashoffset:0;}
+    .timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:var(--text);}
+    .timer-question{font-size:18px;font-weight:700;color:var(--text);margin-bottom:1.2rem;line-height:1.4;}
+    .timer-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;}
+    .timer-opt{padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.15s;}
+    .timer-opt:hover{border-color:rgba(124,108,255,0.5);background:rgba(124,108,255,0.1);}
+    .timer-opt.wrong{background:var(--red-bg);border-color:rgba(255,92,92,0.5);}
+    .timer-opt.correct{background:var(--green-bg);border-color:rgba(61,220,132,0.5);color:var(--green);}
+
+    /* ── BSOD STAGE ── */
+    .bsod{position:fixed;inset:0;background:#0a78d1;z-index:9000;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:10vw;animation:bsodIn 0.15s ease both;}
+    @keyframes bsodIn{from{opacity:0}to{opacity:1}}
+    .bsod-emoji{font-size:64px;margin-bottom:1.5rem;display:block;}
+    .bsod-title{font-family:'DM Mono',monospace;font-size:clamp(20px,3vw,32px);font-weight:700;color:#fff;margin-bottom:1.5rem;line-height:1.2;}
+    .bsod-body{font-family:'DM Mono',monospace;font-size:clamp(11px,1.5vw,14px);color:rgba(255,255,255,0.85);line-height:2;max-width:600px;}
+    .bsod-progress{font-family:'DM Mono',monospace;font-size:clamp(14px,2vw,18px);color:#fff;margin-top:2rem;}
+    .bsod-bar{width:300px;height:4px;background:rgba(255,255,255,0.3);border-radius:99px;margin-top:0.8rem;overflow:hidden;}
+    .bsod-bar-fill{height:100%;background:#fff;border-radius:99px;transition:width 0.3s ease;}
+
+    /* ── TYPING STAGE ── */
+    .type-input-wrap{position:relative;margin:1.2rem 0;}
+    .type-display{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;font-family:'DM Mono',monospace;font-size:20px;color:var(--text);min-height:56px;text-align:left;letter-spacing:0.08em;position:relative;transition:border-color 0.2s;}
+    .type-display.active{border-color:var(--accent);}
+    .type-cursor{display:inline-block;width:2px;height:1.2em;background:var(--accent);vertical-align:middle;margin-left:2px;animation:blink 0.8s steps(1) infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .type-hint{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:0.5rem;}
+    .keyboard-hint{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:1rem;}
+    .key{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+
+    /* ── FINAL RESULT ── */
+    #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:999;}
+  </style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<div id="app">
+  <div class="card" id="main-card">
+    <div id="content"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════
+   CONFETTI
+══════════════════════════════════ */
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = ['#7c6cff','#3ddc84','#ffb547','#ff5c5c','#b060ff','#60d0ff','#fff'];
+  const pieces = Array.from({length:150},()=>({
+    x:Math.random()*canvas.width, y:-10-Math.random()*120,
+    r:5+Math.random()*7, color:colors[Math.floor(Math.random()*colors.length)],
+    vx:(Math.random()-0.5)*5, vy:2.5+Math.random()*4,
+    spin:Math.random()*Math.PI*2, spinV:(Math.random()-0.5)*0.25,
+    shape:Math.random()>0.5?'rect':'circle'
+  }));
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive=false;
+    pieces.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.spin+=p.spinV; p.vy+=0.1;
+      if(p.y<canvas.height+20) alive=true;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.spin);
+      ctx.globalAlpha=Math.max(0,1-p.y/(canvas.height*1.1));
+      ctx.fillStyle=p.color;
+      if(p.shape==='rect') ctx.fillRect(-p.r,-p.r*0.4,p.r*2,p.r*0.8);
+      else{ctx.beginPath();ctx.arc(0,0,p.r*0.5,0,Math.PI*2);ctx.fill();}
+      ctx.restore();
+    });
+    if(alive) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+/* ══════════════════════════════════
+   CAPTCHA DRAWING HELPERS
+══════════════════════════════════ */
+function drawAbstractBlob(canvas, seed, hasTarget) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth || 80;
+  const h = canvas.height = canvas.offsetHeight || 80;
+  const rng = (function(s){
+    return function(){ s=Math.sin(s)*43758.5453123; return s-Math.floor(s); };
+  })(seed*999.7);
+
+  // bg
+  const palette = hasTarget
+    ? ['#1a1a3e','#0d1f3c','#12223a','#0f1a30']
+    : ['#1a1225','#1f1a12','#121a1a','#201515'];
+  ctx.fillStyle = palette[Math.floor(rng()*palette.length)];
+  ctx.fillRect(0,0,w,h);
+
+  const n = 3+Math.floor(rng()*3);
+  for(let i=0;i<n;i++){
+    const cx=rng()*w, cy=rng()*h, rx=20+rng()*30, ry=15+rng()*25;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx,ry,rng()*Math.PI,0,Math.PI*2);
+    if(hasTarget){
+      // blueish blobs that vaguely look like buses if you squint
+      const hue = 200+rng()*40;
+      ctx.fillStyle = `hsla(${hue},60%,${40+rng()*20}%,0.8)`;
+    } else {
+      const hue = 10+rng()*30;
+      ctx.fillStyle = `hsla(${hue},50%,${30+rng()*20}%,0.7)`;
+    }
+    ctx.fill();
+  }
+  // noise dots
+  for(let i=0;i<60;i++){
+    ctx.fillStyle=`rgba(255,255,255,${rng()*0.06})`;
+    ctx.fillRect(rng()*w,rng()*h,1,1);
+  }
+}
+
+/* ══════════════════════════════════
+   STAGES
+══════════════════════════════════ */
+const stages = [
+
+  /* 0 — Intro */
+  {
+    render(){return`
+      <div class="stage-label"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.4s ease-in-out infinite;display:inline-block;"></span> Patience Assessment v3.1</div>
+      <h1>The Official<br>Patience Test</h1>
+      <p class="subtitle">A rigorous 10-stage evaluation of your mental fortitude.<br>Only 1% of participants reach the end.</p>
+      <div class="divider"></div>
+      <p class="msg">Are you patient enough to handle what's coming?<br>Think carefully before you begin.</p>
+      <button class="btn-primary" onclick="next()">Begin Test &nbsp;→</button>
+      <p class="footnote">⚠ Side effects include frustration, confusion, and mild existential dread</p>
+    `;}
+  },
+
+  /* 1 — Fake loading bar */
+  {
+    render(){return`
+      <div class="stage-label">Stage 01 &nbsp;/&nbsp; environment setup</div>
+      <h1>Initializing<br>Test Environment</h1>
+      <p class="subtitle">Calibrating difficulty to your patience level.<br>Please stand by.</p>
+      <div class="progress-wrap"><div class="progress-bar" id="pb" style="width:0%"></div></div>
+      <p class="progress-text" id="load-msg">Connecting to servers...</p>
+      <div class="divider"></div>
+      <p class="footnote">Do NOT close this window or refresh the page.<br>Your progress will be permanently lost.</p>
+    `;},
+    onMount(){
+      const msgs=["Connecting to servers...","Fetching question bank...","Verifying your account...","Loading patience algorithms...","Almost ready...","Finalizing setup...","Installing patience module...","Applying optimizations..."];
+      let i=0,pct=0;
+      const pb=document.getElementById('pb'), lm=document.getElementById('load-msg');
+      const iv=setInterval(()=>{
+        pct+=Math.random()*9+3; if(pct>=99)pct=99;
+        pb.style.width=Math.min(pct,99)+'%';
+        if(i<msgs.length){lm.textContent=msgs[i];i++;}
+        if(pct>=99&&i>=msgs.length-1){
+          clearInterval(iv);
+          setTimeout(()=>{
+            pb.style.background='linear-gradient(90deg,var(--red),#ff8080)';
+            lm.textContent='❌  Error: Connection lost. Restarting from 0%...';
+            setTimeout(()=>{pb.style.width='0%';pb.style.background='';},500);
+            setTimeout(()=>next(),2400);
+          },600);
+        }
+      },700);
+    }
+  },
+
+  /* 2 — Green button */
+  {
+    render(){return`
+      <div class="stage-label">Stage 02 &nbsp;/&nbsp; colour recognition</div>
+      <h1>Simple Task</h1>
+      <p class="subtitle">This should be easy. We believe in you.<br>Just follow the instructions carefully.</p>
+      <div class="divider"></div>
+      <p class="msg">Click the <strong style="color:var(--green);font-weight:700;">green</strong> button to continue.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="color-btn" style="background:rgba(255,92,92,0.1);border-color:rgba(255,92,92,0.3);color:#ff8080;" onclick="wrongColor(this)">Green</button>
+        <button class="color-btn" style="background:rgba(61,220,132,0.1);border-color:rgba(61,220,132,0.3);color:#3ddc84;" onclick="wrongColor(this)">Green</button>
+        <button class="color-btn" style="background:rgba(96,208,255,0.1);border-color:rgba(96,208,255,0.3);color:#60d0ff;" onclick="wrongColor(this)">Green</button>
+      </div>
+      <p class="taunt" id="color-msg" style="margin-top:1.4rem;"></p>
+    `;}
+  },
+
+  /* 3 — CAPTCHA from hell */
+  {
+    render(){
+      window._captchaSelected = new Set();
+      window._captchaVerifyCount = 0;
+      // cells 0,2,5,9 are "buses" (target)
+      window._captchaTargets = new Set([0,2,5,9]);
+      const cells = Array.from({length:16},(_,i)=>`
+        <div class="captcha-cell" id="cc-${i}" onclick="captchaToggle(${i})">
+          <canvas id="ccanvas-${i}" style="width:100%;height:100%;display:block;"></canvas>
+        </div>`).join('');
+      return`
+        <div class="stage-label">Stage 03 &nbsp;/&nbsp; security verification</div>
+        <h1>Prove You're<br>Human</h1>
+        <p class="subtitle">Complete the CAPTCHA below to proceed.<br>This should only take a second.</p>
+        <div class="captcha-row">
+          <span class="captcha-check-icon">🚌</span>
+          <div class="captcha-text">Select all images that contain a <strong style="color:var(--text);">bus</strong></div>
+        </div>
+        <div class="captcha-grid">${cells}</div>
+        <button class="btn-primary captcha-verify-btn" onclick="captchaVerify()" style="width:100%;">Verify &nbsp;→</button>
+        <p class="taunt" id="captcha-taunt" style="margin-top:0.8rem;"></p>
+      `;
+    },
+    onMount(){
+      // draw blobs after DOM paint
+      requestAnimationFrame(()=>{
+        for(let i=0;i<16;i++){
+          const canvas=document.getElementById('ccanvas-'+i);
+          if(canvas) drawAbstractBlob(canvas, i*13.7+1, window._captchaTargets.has(i));
+        }
+      });
+      window.captchaToggle=function(i){
+        const el=document.getElementById('cc-'+i);
+        if(window._captchaSelected.has(i)){window._captchaSelected.delete(i);el.classList.remove('selected');}
+        else{window._captchaSelected.add(i);el.classList.add('selected');}
+      };
+      window.captchaVerify=function(){
+        window._captchaVerifyCount++;
+        const t=document.getElementById('captcha-taunt');
+        const taunts=[
+          "Incorrect. Please try again.",
+          "Still wrong. Are those buses or not?",
+          "The images clearly show buses. Look harder.",
+          "We've updated the images. Try again.",
+          "Our system detects suspicious activity.",
+          "You have failed 5 times. Initiating re-verification.",
+          "New images loaded. Select the buses.",
+          "Hint: all of them might be buses. Or none.",
+          "Fine. You pass. Somehow."
+        ];
+        t.textContent=taunts[Math.min(window._captchaVerifyCount-1,taunts.length-1)];
+        // re-draw fresh blobs each time to confuse
+        if(window._captchaVerifyCount<taunts.length-1){
+          for(let i=0;i<16;i++){
+            const c=document.getElementById('ccanvas-'+i);
+            if(c) drawAbstractBlob(c,(i+window._captchaVerifyCount)*17.3+1,window._captchaTargets.has(i));
+            document.getElementById('cc-'+i).classList.remove('selected');
+          }
+          window._captchaSelected=new Set();
+        } else {
+          setTimeout(()=>next(),900);
+        }
+      };
+    }
+  },
+
+  /* 4 — Moving checkbox */
+  {
+    render(){
+      window._checkboxMoves=0;
+      return`
+        <div class="stage-label">Stage 04 &nbsp;/&nbsp; robot detection</div>
+        <h1>One Quick Check</h1>
+        <p class="subtitle">Just tick the box below and you're good to go.<br>Simple.</p>
+        <div class="divider"></div>
+        <div id="checkbox-area" style="position:relative;min-height:90px;display:flex;align-items:center;justify-content:center;">
+          <div class="checkbox-card" id="chk-card" onmouseenter="moveCheckbox()" onclick="clickCheckbox()" style="width:100%;max-width:380px;position:relative;transition:all 0.18s;">
+            <div class="fake-checkbox" id="fake-chk"></div>
+            <div>
+              <div class="checkbox-label-text">I am not a robot</div>
+              <div class="checkbox-sub">reCAPTCHA · Privacy · Terms</div>
+            </div>
+            <div class="recaptcha-logo">
+              <div class="recaptcha-logo-img">🔒</div>
+              <div class="recaptcha-logo-text">reCAPTCHA</div>
+            </div>
+          </div>
+        </div>
+        <p class="taunt" id="chk-taunt" style="margin-top:0.5rem;"></p>
+        <p class="footnote" style="margin-top:1rem;">Security check powered by Google reCAPTCHA</p>
+      `;
+    },
+    onMount(){
+      window.moveCheckbox=function(){
+        window._checkboxMoves++;
+        const card=document.getElementById('chk-card');
+        const taunt=document.getElementById('chk-taunt');
+        if(window._checkboxMoves>=7){
+          card.onmouseenter=null;
+          taunt.textContent="";
+          return;
+        }
+        const offsets=[
+          [120,0],[0,60],[-130,0],[0,-55],[110,30],[-100,40],[0,0]
+        ];
+        const [dx,dy]=offsets[window._checkboxMoves-1]||[0,0];
+        card.style.transform=`translate(${dx}px,${dy}px)`;
+        const msgs=["Almost!","Too slow!","Hey!","Stop that.","...","I said STOP.","Fine."];
+        taunt.textContent=msgs[Math.min(window._checkboxMoves-1,msgs.length-1)];
+      };
+      window.clickCheckbox=function(){
+        const card=document.getElementById('chk-card');
+        const chk=document.getElementById('fake-chk');
+        const taunt=document.getElementById('chk-taunt');
+        if(window._checkboxMoves>=7){
+          chk.innerHTML='<span style="color:var(--green);font-size:16px;">✓</span>';
+          chk.style.borderColor='var(--green)';
+          chk.style.background='var(--green-bg)';
+          card.style.borderColor='rgba(61,220,132,0.3)';
+          taunt.style.color='var(--green)';
+          taunt.textContent='Verified! (Finally.)';
+          setTimeout(()=>next(),1200);
+        } else {
+          card.style.transform='translate('+(Math.random()*160-80)+'px,'+(Math.random()*60-30)+'px)';
+          taunt.textContent="You have to hover it first!";
+        }
+      };
+    }
+  },
+
+  /* 5 — Click smallest number */
+  {
+    render(){
+      window._q5attempts=0;
+      const options=[12,27,64,38,91,53,76,19,45,88];
+      const btns=options.map(n=>`<button class="num-btn" onclick="q5click(${n},this)">${n}</button>`).join('');
+      return`
+        <div class="stage-label">Stage 05 &nbsp;/&nbsp; numerical reasoning</div>
+        <div class="question-label">Question <span id="q5-label" onclick="q5clickFive(this)">5</span></div>
+        <div class="badge badge-warn"><span class="badge-dot"></span> Identify the smallest number</div>
+        <p class="msg" style="margin-bottom:0.5rem;">Click on the <strong style="color:var(--text);font-weight:700;">smallest</strong> number.</p>
+        <div class="num-grid">${btns}</div>
+        <p class="taunt" id="q5-taunt"></p>
+      `;
+    },
+    onMount(){
+      window.q5click=function(n,btn){
+        window._q5attempts++;
+        btn.classList.add('wrong');
+        setTimeout(()=>btn.classList.remove('wrong'),500);
+        const t=document.getElementById('q5-taunt');
+        const hints=["That's not the smallest...","Look harder. It's literally right here.","Are you even reading the question?","All of these are greater than 5.","The answer is SMALLER than all of these.","Hint: read every word on the screen.","Every. Single. Word.","Including the question label at the top.","Yes — the label that says Question ___.","Click the NUMBER in the question title.","Q-U-E-S-T-I-O-N F-I-V-E. Click the 5."];
+        t.textContent=hints[Math.min(window._q5attempts-1,hints.length-1)];
+      };
+      window.q5clickFive=function(el){
+        el.classList.add('correct'); el.style.pointerEvents='none';
+        const t=document.getElementById('q5-taunt');
+        t.classList.add('success');
+        t.textContent='✓  YES! The "5" in "Question 5" was the smallest all along!';
+        setTimeout(()=>next(),1900);
+      };
+    }
+  },
+
+  /* 6 — OK button runs away */
+  {
+    render(){return`
+      <div class="stage-label">Stage 06 &nbsp;/&nbsp; motor skills assessment</div>
+      <h1>One Final Step</h1>
+      <p class="subtitle">You're incredibly close to finishing.<br>Simply click the button below.</p>
+      <div class="divider"></div>
+      <div id="ok-area">
+        <button class="btn-primary" id="ok-btn" onmouseenter="runAway()" onclick="next()" style="position:relative;transition:left 0.12s cubic-bezier(0.4,0,0.2,1),top 0.12s cubic-bezier(0.4,0,0.2,1);">Finish &nbsp;→</button>
+      </div>
+      <p class="taunt" id="run-msg" style="margin-top:0.3rem;"></p>
+      <p class="footnote" style="margin-top:1.2rem;">Tip: approach the button slowly and carefully</p>
+    `;}
+    ,
+    onMount(){
+      let escapes=0;
+      window.runAway=function(){
+        escapes++;
+        const btn=document.getElementById('ok-btn'), msg=document.getElementById('run-msg');
+        btn.style.left=(Math.random()-0.5)*210+'px';
+        btn.style.top=(Math.random()-0.5)*55+'px';
+        const taunts=["Nope!","Too slow!","Nice try ;)","lmaooo","Almost...","Skill issue","Just a bit faster","You'll never catch me","LOL good luck"];
+        msg.textContent=taunts[escapes%taunts.length];
+        if(escapes>=9){btn.onmouseenter=null;btn.style.left='0';btn.style.top='0';msg.textContent="Fine. You tired me out.";}
+      };
+    }
+  },
+
+  /* 7 — Countdown timer (speeds up) */
+  {
+    render(){
+      window._timerAnswered=false;
+      return`
+        <div class="stage-label">Stage 07 &nbsp;/&nbsp; speed assessment</div>
+        <h1>Quick! Answer Fast!</h1>
+        <p class="subtitle">You have 10 seconds to answer the question.<br>The clock is ticking. Don't panic.</p>
+        <div class="timer-circle-wrap">
+          <svg class="timer-svg" width="120" height="120" viewBox="0 0 120 120">
+            <circle class="timer-track" cx="60" cy="60" r="52"/>
+            <circle class="timer-prog" id="timer-ring" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="timer-num" id="timer-num">10</div>
+        </div>
+        <p class="timer-question">What is 2 + 2?</p>
+        <div class="timer-options">
+          <button class="timer-opt" onclick="timerAnswer(3,this)">3</button>
+          <button class="timer-opt" onclick="timerAnswer(4,this)">4</button>
+          <button class="timer-opt" onclick="timerAnswer(5,this)">5</button>
+          <button class="timer-opt" onclick="timerAnswer(22,this)">22</button>
+        </div>
+        <p class="taunt" id="timer-taunt"></p>
+      `;
+    },
+    onMount(){
+      const circ=326;
+      let timeLeft=10, speed=1000, frame;
+      const ring=document.getElementById('timer-ring');
+      const numEl=document.getElementById('timer-num');
+      function tick(){
+        if(window._timerAnswered) return;
+        timeLeft=Math.max(0,timeLeft-(speed/1000));
+        const display=Math.ceil(timeLeft);
+        numEl.textContent=display;
+        ring.style.strokeDashoffset=circ*(1-(timeLeft/10));
+        if(timeLeft<=5) { ring.style.stroke='var(--amber)'; }
+        if(timeLeft<=2) { ring.style.stroke='var(--red)'; }
+        if(display<=0){
+          clearTimeout(frame);
+          numEl.textContent='0';
+          document.getElementById('timer-taunt').textContent="Time's up! Restarting the clock...";
+          // reset and speed up
+          timeLeft=10; speed=Math.max(200,speed*0.6);
+          ring.style.stroke='var(--accent)';
+          ring.style.strokeDashoffset=0;
+          numEl.textContent='10';
+          const taunt=document.getElementById('timer-taunt');
+          const msgs=["Too slow! Try again — faster this time.","FASTER! The clock speeds up each round.","Incredible. It keeps getting quicker.","You're running out of time... literally.","This might go on forever. Just pick 4!"];
+          taunt.textContent=msgs[Math.min(Math.floor((1000-speed)/160),msgs.length-1)];
+        }
+        frame=setTimeout(tick,100);
+      }
+      tick();
+      window._clearTimer=function(){clearTimeout(frame);};
+      window.timerAnswer=function(val,btn){
+        if(window._timerAnswered) return;
+        if(val===4){
+          window._timerAnswered=true;
+          clearTimeout(frame);
+          btn.classList.add('correct');
+          document.getElementById('timer-taunt').style.color='var(--green)';
+          document.getElementById('timer-taunt').textContent='✓  Correct! 2+2=4. The clock has been defeated.';
+          setTimeout(()=>next(),1600);
+        } else {
+          btn.classList.add('wrong');
+          setTimeout(()=>btn.classList.remove('wrong'),500);
+        }
+      };
+    }
+  },
+
+  /* 8 — BSOD */
+  {
+    render(){return`
+      <div class="stage-label">Stage 08 &nbsp;/&nbsp; system integrity check</div>
+      <h1>System Check</h1>
+      <p class="subtitle">Running a quick diagnostic on your device.<br>This will only take a moment.</p>
+      <div class="divider"></div>
+      <p class="msg">Scanning hardware components...</p>
+      <div class="progress-wrap"><div class="progress-bar" id="sys-pb" style="width:0%"></div></div>
+      <p class="progress-text" id="sys-msg">Checking CPU...</p>
+      <p class="footnote">Please keep this window in focus during the scan.</p>
+    `;},
+    onMount(){
+      const pb=document.getElementById('sys-pb'), msg=document.getElementById('sys-msg');
+      const steps=["Checking CPU...","Checking RAM...","Checking GPU...","Checking patience reserves...","Patience reserves: CRITICALLY LOW","Running emergency diagnostics...","Attempting recovery...","FATAL ERROR DETECTED"];
+      let i=0,pct=0;
+      const iv=setInterval(()=>{
+        pct+=Math.random()*12+4; if(pct>=100)pct=100;
+        pb.style.width=pct+'%';
+        if(i<steps.length){msg.textContent=steps[i];i++;}
+        if(pct>=100&&i>=steps.length){
+          clearInterval(iv);
+          setTimeout(showBSOD,400);
+        }
+      },500);
+
+      function showBSOD(){
+        const bsod=document.createElement('div');
+        bsod.className='bsod';
+        bsod.innerHTML=`
+          <span class="bsod-emoji">:(</span>
+          <div class="bsod-title">Your PC ran into a problem<br>and needs to restart.</div>
+          <div class="bsod-body">
+            We're just collecting some error info, and then we'll restart for you.<br><br>
+            STOP CODE: &nbsp;<strong>PATIENCE_NOT_FOUND</strong><br>
+            What failed: &nbsp;user_patience.exe<br><br>
+            For more information about this issue and possible fixes, visit<br>
+            <span style="text-decoration:underline;opacity:0.7">https://www.microsoft.com/stopcode</span>
+          </div>
+          <div class="bsod-progress">0% complete</div>
+          <div class="bsod-bar"><div class="bsod-bar-fill" id="bsod-fill" style="width:0%"></div></div>
+        `;
+        document.body.appendChild(bsod);
+
+        let pct2=0;
+        const prog=bsod.querySelector('.bsod-progress');
+        const fill=document.getElementById('bsod-fill');
+        const iv2=setInterval(()=>{
+          pct2+=Math.random()*3+1; if(pct2>=100)pct2=100;
+          fill.style.width=pct2+'%';
+          prog.textContent=Math.floor(pct2)+'% complete';
+          if(pct2>=100){
+            clearInterval(iv2);
+            setTimeout(()=>{
+              bsod.style.transition='opacity 0.4s';
+              bsod.style.opacity='0';
+              setTimeout(()=>{
+                document.body.removeChild(bsod);
+                // show "just kidding" before moving on
+                document.getElementById('content').innerHTML=`
+                  <div class="stage-label">Stage 08 &nbsp;/&nbsp; system integrity check</div>
+                  <h1>lol jk</h1>
+                  <p class="subtitle">Your device is completely fine.<br>That was just for fun. :)</p>
+                  <div class="divider"></div>
+                  <p class="msg" style="font-size:40px;margin-bottom:1rem;">😈</p>
+                  <p class="footnote">Your patience is being noted by our servers.</p>
+                `;
+                setTimeout(()=>next(),2500);
+              },400);
+            },800);
+          }
+        },120);
+      }
+    }
+  },
+
+  /* 9 — Reverse typing */
+  {
+    render(){
+      window._typeBuffer='';
+      window._typeTarget='HELLO';
+      window._typeListening=false;
+      return`
+        <div class="stage-label">Stage 09 &nbsp;/&nbsp; final verification</div>
+        <h1>Last Step.<br>We Promise.</h1>
+        <p class="subtitle">Type the word shown below to confirm your identity.<br>Click the box to start typing.</p>
+        <div class="divider"></div>
+        <p style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;letter-spacing:0.2em;color:var(--accent);margin-bottom:1rem;">HELLO</p>
+        <div class="type-display" id="type-display" onclick="startTyping()" tabindex="0">
+          <span id="type-text"></span><span class="type-cursor" id="type-cursor" style="display:none;"></span>
+        </div>
+        <p class="type-hint" id="type-hint">Click above to begin typing</p>
+        <p class="taunt" id="type-taunt" style="margin-top:0.8rem;"></p>
+      `;
+    },
+    onMount(){
+      window.startTyping=function(){
+        if(window._typeListening) return;
+        window._typeListening=true;
+        const disp=document.getElementById('type-display');
+        const cursor=document.getElementById('type-cursor');
+        const hint=document.getElementById('type-hint');
+        disp.classList.add('active');
+        cursor.style.display='inline-block';
+        hint.textContent='Now type: H E L L O';
+        document.addEventListener('keydown',handleKey);
+      };
+
+      function handleKey(e){
+        if(!window._typeListening) return;
+        const textEl=document.getElementById('type-text');
+        const taunt=document.getElementById('type-taunt');
+
+        if(e.key==='Backspace'){
+          // do nothing, or add a char instead
+          window._typeBuffer+='X';
+          updateDisplay();
+          return;
+        }
+        if(e.key.length===1){
+          // add the PREVIOUS character (offset by 1)
+          const char=e.key.toUpperCase();
+          const shifted=String.fromCharCode(char.charCodeAt(0)-1);
+          window._typeBuffer+=shifted;
+          updateDisplay();
+
+          const taunts=["Hmm...","That doesn't look right.","Are you sure that's an H?","Something's off with your keyboard.","Try typing more carefully.","Your keyboard seems... broken?","The letters aren't matching up.","Very strange input detected.","Our system has never seen this before."];
+          if(window._typeBuffer.length<=taunts.length)
+            taunt.textContent=taunts[window._typeBuffer.length-1]||'';
+
+          // after enough wrong chars, let them through
+          if(window._typeBuffer.length>=6){
+            window._typeListening=false;
+            document.removeEventListener('keydown',handleKey);
+            taunt.style.color='var(--green)';
+            taunt.textContent='✓  Input accepted. (We have no idea what you typed.)';
+            setTimeout(()=>next(),1800);
+          }
+        }
+      }
+
+      function updateDisplay(){
+        document.getElementById('type-text').textContent=window._typeBuffer;
+      }
+    }
+  },
+
+  /* 10 — Verifying score */
+  {
+    render(){return`
+      <div class="stage-label">Stage 10 &nbsp;/&nbsp; result computation</div>
+      <h1>Calculating<br>Your Score</h1>
+      <p class="subtitle">Consulting the global patience database.<br>This is a very serious and important process.</p>
+      <div class="progress-wrap"><div class="progress-bar" id="pb2" style="width:0%"></div></div>
+      <p class="progress-text" id="verify-msg">Initializing scorer...</p>
+      <div class="divider"></div>
+      <p class="footnote">Your results are certified by the International<br>Patience Evaluation Council (IPEC™)</p>
+    `;},
+    onMount(){
+      const pb=document.getElementById('pb2'), vm=document.getElementById('verify-msg');
+      const steps=[[8,"Counting total clicks..."],[20,"Measuring frustration index..."],[35,"Cross-referencing world records..."],[50,"Consulting the patience council..."],[65,"Applying rage multiplier..."],[78,"Validating certificate..."],[92,"Generating final score..."],[100,"Complete."]];
+      let i=0;
+      const iv=setInterval(()=>{
+        if(i>=steps.length){clearInterval(iv);setTimeout(()=>next(),700);return;}
+        pb.style.width=steps[i][0]+'%'; vm.textContent=steps[i][1]; i++;
+      },880);
+    }
+  },
+
+  /* 11 — Final result */
+  {
+    render(){return`
+      <div class="stage-label">Official Results &nbsp;·&nbsp; Certified by IPEC™</div>
+      <h1>Test Complete.</h1>
+      <div class="divider"></div>
+      <p class="score-label" style="margin-bottom:0.4rem;">Your Patience Score</p>
+      <div class="score-display">NaN</div>
+      <p style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:1.6rem;letter-spacing:0.06em;">out of 10</p>
+      <div class="badge badge-err"><span class="badge-dot"></span> Undefined result detected</div>
+      <p class="subtitle" style="margin-top:0.6rem;">Congratulations! You scored NaN/10,<br>placing you in the top 1% of people who can't do math.</p>
+      <div class="divider"></div>
+      <button class="btn-ghost" onclick="restart()">↩ &nbsp;Try Again (for a real score)</button>
+      <p class="footnote" style="margin-top:1rem;">Warning: attempting again may result in a lower score than NaN</p>
+    `;},
+    onMount(){ setTimeout(launchConfetti,400); }
+  }
+];
+
+/* ══════════════════════════════════
+   ENGINE
+══════════════════════════════════ */
+let current=0;
+
+function render(i){
+  // cleanup timer if leaving timer stage
+  if(window._clearTimer){window._clearTimer();window._clearTimer=null;}
+  if(window._typeListening){
+    window._typeListening=false;
+    document.removeEventListener('keydown',window._lastKeyHandler);
+  }
+  const card=document.getElementById('main-card');
+  card.style.animation='none'; void card.offsetWidth;
+  card.style.animation='cardIn 0.45s cubic-bezier(0.16,1,0.3,1) both';
+  document.getElementById('content').innerHTML=stages[i].render();
+  if(stages[i].onMount) stages[i].onMount();
+}
+
+function next(){
+  current=Math.min(current+1,stages.length-1);
+  render(current);
+}
+
+function wrongColor(btn){
+  const msg=document.getElementById('color-msg');
+  btn.classList.add('shake'); setTimeout(()=>btn.classList.remove('shake'),500);
+  const c=(window._colorClicks=(window._colorClicks||0)+1);
+  const taunts=["That's not green. Look again.","Still wrong. Are you colourblind?","Buddy... that's clearly not green.","I'm genuinely starting to worry about you.","Alright, fine. Let's move on."];
+  msg.textContent=taunts[Math.min(c-1,taunts.length-1)];
+  if(c>=5) setTimeout(()=>next(),900);
+}
+
+function restart(){
+  current=0;
+  window._colorClicks=0; window._q5attempts=0; window._captchaVerifyCount=0;
+  window._checkboxMoves=0; window._timerAnswered=false; window._typeBuffer='';
+  render(0);
+}
+
+render(0);
+</script>
+</body>
+</html>
